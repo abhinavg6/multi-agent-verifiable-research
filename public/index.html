@@ -1,0 +1,848 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <title>Verifiable Research Lab</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      :root {
+        /* Dark theme (default) */
+        --bg: #0a0a0c;
+        --panel: #131319;
+        --panel-2: #181820;
+        --panel-hover: #1c1c25;
+        --border: #21222a;
+        --border-soft: #1a1b22;
+        --text: #ededee;
+        --text-2: #a1a1aa;
+        --text-3: #6b7280;
+        --accent: #3b82f6;
+        --accent-hover: #60a5fa;
+        --accent-text: #ffffff;
+        --error: #f87171;
+        --error-bg: rgba(248, 113, 113, 0.1);
+        --error-border: rgba(248, 113, 113, 0.3);
+        --success: #34d399;
+        --success-bg: rgba(52, 211, 153, 0.1);
+
+        --role-planner: #a78bfa;
+        --role-planner-bg: rgba(167, 139, 250, 0.12);
+        --role-planner-border: rgba(167, 139, 250, 0.3);
+        --role-reader: #60a5fa;
+        --role-reader-bg: rgba(96, 165, 250, 0.12);
+        --role-reader-border: rgba(96, 165, 250, 0.3);
+        --role-critic: #f87171;
+        --role-critic-bg: rgba(248, 113, 113, 0.12);
+        --role-critic-border: rgba(248, 113, 113, 0.3);
+        --role-synthesizer: #34d399;
+        --role-synthesizer-bg: rgba(52, 211, 153, 0.12);
+        --role-synthesizer-border: rgba(52, 211, 153, 0.3);
+
+        --ns-verified_claims: #fbbf24;
+        --ns-verified_claims-bg: rgba(251, 191, 36, 0.12);
+        --ns-planner_plan: #a78bfa;
+        --ns-planner_plan-bg: rgba(167, 139, 250, 0.12);
+        --ns-reader_scratch: #60a5fa;
+        --ns-reader_scratch-bg: rgba(96, 165, 250, 0.12);
+        --ns-critic_notes: #f87171;
+        --ns-critic_notes-bg: rgba(248, 113, 113, 0.12);
+        --ns-synth_outputs: #34d399;
+        --ns-synth_outputs-bg: rgba(52, 211, 153, 0.12);
+
+        --cite: #fbbf24;
+        --cite-bg: rgba(251, 191, 36, 0.15);
+        --cite-bg-hover: rgba(251, 191, 36, 0.25);
+
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+        --shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.5);
+      }
+
+      [data-theme="light"] {
+        --bg: #f7f8fa;
+        --panel: #ffffff;
+        --panel-2: #fafafa;
+        --panel-hover: #f0f1f4;
+        --border: #e5e7eb;
+        --border-soft: #f0f1f4;
+        --text: #0f172a;
+        --text-2: #475569;
+        --text-3: #94a3b8;
+        --accent: #2563eb;
+        --accent-hover: #1d4ed8;
+        --accent-text: #ffffff;
+        --error: #dc2626;
+        --error-bg: rgba(220, 38, 38, 0.06);
+        --error-border: rgba(220, 38, 38, 0.25);
+        --success: #059669;
+        --success-bg: rgba(5, 150, 105, 0.08);
+
+        --role-planner: #7c3aed;
+        --role-planner-bg: rgba(124, 58, 237, 0.08);
+        --role-planner-border: rgba(124, 58, 237, 0.25);
+        --role-reader: #2563eb;
+        --role-reader-bg: rgba(37, 99, 235, 0.08);
+        --role-reader-border: rgba(37, 99, 235, 0.25);
+        --role-critic: #dc2626;
+        --role-critic-bg: rgba(220, 38, 38, 0.08);
+        --role-critic-border: rgba(220, 38, 38, 0.25);
+        --role-synthesizer: #059669;
+        --role-synthesizer-bg: rgba(5, 150, 105, 0.08);
+        --role-synthesizer-border: rgba(5, 150, 105, 0.25);
+
+        --ns-verified_claims: #b45309;
+        --ns-verified_claims-bg: rgba(180, 83, 9, 0.08);
+        --ns-planner_plan: #7c3aed;
+        --ns-planner_plan-bg: rgba(124, 58, 237, 0.08);
+        --ns-reader_scratch: #2563eb;
+        --ns-reader_scratch-bg: rgba(37, 99, 235, 0.08);
+        --ns-critic_notes: #dc2626;
+        --ns-critic_notes-bg: rgba(220, 38, 38, 0.08);
+        --ns-synth_outputs: #059669;
+        --ns-synth_outputs-bg: rgba(5, 150, 105, 0.08);
+
+        --cite: #b45309;
+        --cite-bg: rgba(180, 83, 9, 0.1);
+        --cite-bg-hover: rgba(180, 83, 9, 0.18);
+
+        --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+        --shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.08);
+      }
+
+      html, body {
+        height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter,
+          "Helvetica Neue", Arial, sans-serif;
+        font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, "JetBrains Mono", monospace; }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+      }
+      .scroll {
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border) transparent;
+      }
+      .scroll::-webkit-scrollbar { width: 8px; }
+      .scroll::-webkit-scrollbar-track { background: transparent; }
+      .scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+      pre { white-space: pre-wrap; word-break: break-word; }
+      hr.divider { border: none; border-top: 1px solid var(--border-soft); margin: 0; }
+
+      .pill {
+        display: inline-block;
+        padding: 1px 7px;
+        margin-right: 4px;
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        border: 1px solid;
+        border-radius: 4px;
+        line-height: 1.5;
+      }
+      .role-planner    { color: var(--role-planner);    background: var(--role-planner-bg);    border-color: var(--role-planner-border); }
+      .role-reader     { color: var(--role-reader);     background: var(--role-reader-bg);     border-color: var(--role-reader-border); }
+      .role-critic     { color: var(--role-critic);     background: var(--role-critic-bg);     border-color: var(--role-critic-border); }
+      .role-synthesizer{ color: var(--role-synthesizer);background: var(--role-synthesizer-bg);border-color: var(--role-synthesizer-border); }
+
+      .ns-verified_claims { color: var(--ns-verified_claims); background: var(--ns-verified_claims-bg); border-color: var(--ns-verified_claims); }
+      .ns-planner_plan    { color: var(--ns-planner_plan);    background: var(--ns-planner_plan-bg);    border-color: var(--ns-planner_plan); }
+      .ns-reader_scratch  { color: var(--ns-reader_scratch);  background: var(--ns-reader_scratch-bg);  border-color: var(--ns-reader_scratch); }
+      .ns-critic_notes    { color: var(--ns-critic_notes);    background: var(--ns-critic_notes-bg);    border-color: var(--ns-critic_notes); }
+      .ns-synth_outputs   { color: var(--ns-synth_outputs);   background: var(--ns-synth_outputs-bg);   border-color: var(--ns-synth_outputs); }
+
+      .sev-block { color: var(--error); }
+      .sev-warn  { color: var(--cite); }
+      .sev-info  { color: var(--role-reader); }
+
+      .blob-link {
+        font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+        color: var(--accent);
+        text-decoration: none;
+        font-size: 11px;
+      }
+      .blob-link:hover { color: var(--accent-hover); text-decoration: underline; }
+
+      .claim-cite {
+        display: inline-block;
+        padding: 0 5px;
+        margin: 0 1px;
+        border-radius: 3px;
+        background: var(--cite-bg);
+        color: var(--cite);
+        cursor: pointer;
+        font-size: 0.85em;
+        font-weight: 500;
+        transition: background 0.12s ease;
+      }
+      .claim-cite:hover { background: var(--cite-bg-hover); }
+      .claim-cite.flagged-block { background: var(--error-bg); color: var(--error); }
+      .claim-cite.flagged-warn  { background: var(--cite-bg-hover); color: var(--cite); }
+
+      .status-dot {
+        display: inline-block;
+        width: 6px; height: 6px;
+        border-radius: 50%;
+        background: var(--text-3);
+        margin-right: 6px;
+        vertical-align: middle;
+      }
+      .status-dot.ok { background: var(--success); box-shadow: 0 0 0 2px var(--success-bg); }
+      .status-dot.error { background: var(--error); box-shadow: 0 0 0 2px var(--error-bg); }
+
+      .btn-primary {
+        background: var(--accent);
+        color: var(--accent-text);
+        font-weight: 500;
+        padding: 8px 14px;
+        border-radius: 6px;
+        font-size: 13px;
+        transition: background 0.12s ease;
+      }
+      .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+      .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+      .btn-secondary {
+        background: transparent;
+        color: var(--text-2);
+        border: 1px solid var(--border);
+        padding: 8px 14px;
+        border-radius: 6px;
+        font-size: 13px;
+        transition: all 0.12s ease;
+      }
+      .btn-secondary:hover { background: var(--panel-hover); color: var(--text); }
+
+      .icon-btn {
+        background: transparent;
+        color: var(--text-2);
+        border: 1px solid var(--border);
+        padding: 6px;
+        border-radius: 6px;
+        line-height: 0;
+        transition: all 0.12s ease;
+      }
+      .icon-btn:hover { background: var(--panel-hover); color: var(--text); }
+
+      .input-base {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        color: var(--text);
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 13px;
+        transition: border-color 0.12s ease;
+      }
+      .input-base:focus { border-color: var(--accent); outline: none; }
+      .input-base::placeholder { color: var(--text-3); }
+
+      .card {
+        background: var(--panel-2);
+        border: 1px solid var(--border-soft);
+        border-radius: 6px;
+        padding: 10px 12px;
+      }
+      .card.error {
+        background: var(--error-bg);
+        border-color: var(--error-border);
+      }
+
+      .section-header {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-3);
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        font-weight: 500;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: var(--panel-2);
+        color: var(--text-2);
+        border: 1px solid var(--border-soft);
+      }
+      .badge.success { background: var(--success-bg); color: var(--success); border-color: transparent; }
+      .badge.error { background: var(--error-bg); color: var(--error); border-color: transparent; }
+
+      /* Tiny pulsing indicator while a run is active */
+      @keyframes pulse {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 1; }
+      }
+      .live-dot {
+        display: inline-block;
+        width: 6px; height: 6px;
+        border-radius: 50%;
+        background: var(--accent);
+        animation: pulse 1.6s ease-in-out infinite;
+        margin-right: 6px;
+        vertical-align: middle;
+      }
+
+      /* Report typography */
+      .report-body { font-size: 14px; line-height: 1.65; color: var(--text); }
+      .report-body p { margin-bottom: 14px; }
+      .report-body h2 { font-size: 17px; font-weight: 600; margin: 18px 0 8px; }
+      .report-body h3 { font-size: 15px; font-weight: 600; margin: 14px 0 6px; }
+      .report-body code {
+        background: var(--panel-2);
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+        font-size: 12.5px;
+        color: var(--accent);
+      }
+      .report-body strong { color: var(--text); font-weight: 600; }
+
+      .empty-state { color: var(--text-3); font-size: 13px; }
+    </style>
+  </head>
+  <body class="h-full">
+    <div class="flex h-full flex-col">
+      <!-- HEADER -->
+      <header
+        class="flex items-center justify-between border-b px-5 py-3"
+        style="border-color: var(--border)"
+      >
+        <div class="flex items-center gap-4">
+          <div>
+            <div class="text-sm font-semibold tracking-tight" style="color: var(--text)">
+              Verifiable Research Lab
+            </div>
+            <div class="text-xs mt-0.5" style="color: var(--text-3)">
+              Planner · Readers · Critic · Synthesizer · MemWal · Walrus · Seal
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <div id="run-status" class="badge" style="display: none"></div>
+          <div id="health-anth" class="badge"><span class="status-dot"></span>anthropic</div>
+          <div id="health-mw"   class="badge"><span class="status-dot"></span>memwal</div>
+          <div id="health-wal"  class="badge"><span class="status-dot"></span>walrus</div>
+          <div id="health-fund" class="badge"><span class="status-dot"></span>wallet</div>
+          <div id="health-seal" class="badge"><span class="status-dot"></span>seal</div>
+          <button id="theme-toggle" class="icon-btn" title="Toggle theme">
+            <svg id="theme-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <!-- moon by default; replaced with sun in light mode -->
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- 3-PANE LAYOUT -->
+      <main class="grid flex-1 min-h-0 grid-cols-12 gap-3 p-3">
+        <!-- LEFT: question + agent trace -->
+        <section class="panel col-span-4 flex min-h-0 flex-col">
+          <div class="section-header">Run</div>
+          <form id="run-form" class="p-3 space-y-3" style="border-bottom: 1px solid var(--border)">
+            <textarea
+              id="question"
+              rows="3"
+              placeholder="Ask a research question. e.g. What does current evidence say about the gut–brain axis in Parkinson's disease?"
+              class="input-base w-full"
+            ></textarea>
+            <div class="flex flex-wrap gap-3 text-xs" style="color: var(--text-2)">
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="src-cb" value="arxiv" checked> arxiv</label>
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="src-cb" value="wikipedia" checked> wikipedia</label>
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="src-cb" value="openalex" checked> openalex</label>
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="src-cb" value="pubmed" checked> pubmed</label>
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="src-cb" value="github"> github</label>
+              <label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" class="src-cb" value="rss"> rss</label>
+            </div>
+            <div class="flex gap-2">
+              <button id="run-btn" type="submit" class="btn-primary">Run</button>
+              <button id="clear-btn" type="button" class="btn-secondary">Clear trace</button>
+            </div>
+          </form>
+          <div class="section-header" style="border-top: 0">Agent trace</div>
+          <div id="trace" class="scroll flex-1 px-3 py-3 text-xs space-y-2">
+            <div class="empty-state">The agent trace will appear here while a run is in progress.</div>
+          </div>
+        </section>
+
+        <!-- MIDDLE: final report -->
+        <section class="panel col-span-5 flex min-h-0 flex-col">
+          <div class="flex items-center justify-between section-header" style="text-transform: none; letter-spacing: 0; padding-right: 14px">
+            <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase">Final report</span>
+            <span id="final-meta" class="text-xs" style="color: var(--text-3)"></span>
+          </div>
+          <div id="report" class="scroll flex-1 px-5 py-4">
+            <div class="empty-state">
+              Run a question to see the verifiable report. Every <span class="claim-cite">[c-id]</span> in the report is a clickable link to the Walrus blob that justifies it.
+            </div>
+          </div>
+        </section>
+
+        <!-- RIGHT: memory + claims -->
+        <section class="panel col-span-3 flex min-h-0 flex-col">
+          <div class="section-header">Memory inspector</div>
+          <div id="memory" class="scroll px-3 py-3 text-xs space-y-2" style="flex:1 1 50%; min-height:0;">
+            <div class="empty-state">Reads and writes appear here as agents touch memory.</div>
+          </div>
+          <div class="section-header" style="border-top: 1px solid var(--border)">Claims</div>
+          <div id="claims" class="scroll px-3 py-3 text-xs space-y-2" style="flex:1 1 50%; min-height:0;">
+            <div class="empty-state">Atomic claims with their supporting blob IDs.</div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module">
+      // ======== Theme ========
+      const root = document.documentElement;
+      const SAVED_THEME_KEY = "vrl-theme";
+      const initial = localStorage.getItem(SAVED_THEME_KEY) || "dark";
+      root.setAttribute("data-theme", initial);
+      updateThemeIcon();
+
+      document.getElementById("theme-toggle").addEventListener("click", () => {
+        const cur = root.getAttribute("data-theme");
+        const next = cur === "dark" ? "light" : "dark";
+        root.setAttribute("data-theme", next);
+        localStorage.setItem(SAVED_THEME_KEY, next);
+        updateThemeIcon();
+      });
+
+      function updateThemeIcon() {
+        const cur = root.getAttribute("data-theme");
+        const icon = document.getElementById("theme-icon");
+        if (!icon) return;
+        if (cur === "light") {
+          icon.innerHTML = `
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2"></path><path d="M12 20v2"></path>
+            <path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path>
+            <path d="M2 12h2"></path><path d="M20 12h2"></path>
+            <path d="m4.93 19.07 1.41-1.41"></path><path d="m17.66 6.34 1.41-1.41"></path>`;
+        } else {
+          icon.innerHTML = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>`;
+        }
+      }
+
+      // ======== State ========
+      const state = {
+        claims: new Map(),
+        memory: { verified_claims: [], planner_plan: [], reader_scratch: [], critic_notes: [], synth_outputs: [] },
+        aggregator: null,
+        finalSnapshotBlob: null,
+        running: false,
+      };
+
+      // ======== Helpers ========
+      const $ = (s) => document.querySelector(s);
+      const trace = $("#trace");
+      const memoryPane = $("#memory");
+      const claimsPane = $("#claims");
+      const reportPane = $("#report");
+      const finalMeta = $("#final-meta");
+      const runStatus = $("#run-status");
+
+      function el(tag, props = {}, ...kids) {
+        const e = document.createElement(tag);
+        for (const [k, v] of Object.entries(props)) {
+          if (k === "className") e.className = v;
+          else if (k === "style") e.style.cssText = v;
+          else if (k.startsWith("data-") || k === "title" || k === "href" || k === "target" || k === "rel") {
+            e.setAttribute(k, v);
+          } else e[k] = v;
+        }
+        for (const k of kids.flat()) {
+          if (k == null) continue;
+          e.append(k.nodeType ? k : document.createTextNode(k));
+        }
+        return e;
+      }
+
+      function shortId(s) { return s ? s.slice(0, 10) + "…" : ""; }
+      function blobLink(blobId) {
+        return el("a", {
+          className: "blob-link",
+          href: `${state.aggregator}/v1/blobs/${blobId}`,
+          target: "_blank", rel: "noopener", title: blobId,
+        }, shortId(blobId));
+      }
+      function pillRole(role)  { return el("span", { className: `pill role-${role}` }, role); }
+      function pillNs(ns)      { return el("span", { className: `pill ns-${ns}` }, ns); }
+      function addTrace(node)  { trace.append(node); trace.scrollTop = trace.scrollHeight; }
+
+      function clearEmptyState(pane) {
+        const empty = pane.querySelector(".empty-state");
+        if (empty) empty.remove();
+      }
+
+      function setRunStatus(state, label) {
+        runStatus.style.display = "inline-flex";
+        runStatus.innerHTML = "";
+        if (state === "running") {
+          runStatus.className = "badge";
+          runStatus.append(el("span", { className: "live-dot" }), document.createTextNode("running"));
+        } else if (state === "ok") {
+          runStatus.className = "badge success";
+          runStatus.textContent = "✓ " + (label ?? "complete");
+        } else if (state === "error") {
+          runStatus.className = "badge error";
+          runStatus.textContent = "✗ " + (label ?? "failed");
+        } else {
+          runStatus.style.display = "none";
+        }
+      }
+
+      // ======== Health ========
+      async function checkHealth() {
+        try {
+          const r = await fetch("/api/health");
+          const h = await r.json();
+          state.aggregator = h.walrus.aggregator;
+
+          $("#health-anth").innerHTML = `<span class="status-dot ${h.anthropic.hasKey ? 'ok' : 'error'}"></span>anthropic <span style="color: var(--text-3); margin-left: 4px">${h.anthropic.model}</span>`;
+          $("#health-mw").innerHTML   = `<span class="status-dot ${h.memwal.ok ? 'ok' : 'error'}"></span>memwal`;
+          $("#health-wal").innerHTML  = `<span class="status-dot ${h.walrus.ok ? 'ok' : 'error'}"></span>walrus <span style="color: var(--text-3); margin-left: 4px">${h.walrus.network}</span>`;
+
+          // Wallet — show SUI/WAL balances
+          const f = h.funding;
+          const fundOk = f.error == null && parseFloat(f.sui) > 0;
+          const walDisplay = f.wal == null ? "?" : f.wal;
+          $("#health-fund").innerHTML = `<span class="status-dot ${fundOk ? 'ok' : 'error'}"></span>wallet <span class="mono" style="color: var(--text-3); margin-left: 4px" title="${f.address}">${f.sui} SUI · ${walDisplay} WAL</span>`;
+
+          $("#health-seal").innerHTML = `<span class="status-dot ${h.seal.enabled ? 'ok' : ''}"></span>seal ${h.seal.enabled ? "on" : "off"}`;
+        } catch {
+          $("#health-mw").innerHTML = `<span class="status-dot error"></span>health error`;
+        }
+      }
+      checkHealth();
+
+      // ======== Event handlers ========
+      const handlers = {
+        "run.user": (e) => {
+          clearEmptyState(trace);
+          addTrace(el("div", { style: "color: var(--text-2)" },
+            el("span", { style: "color: var(--text-3); margin-right: 6px" }, "❯"),
+            el("strong", {}, e.question),
+          ));
+        },
+        "agent.start": (e) => {
+          clearEmptyState(trace);
+          addTrace(el("div", { className: "card" },
+            pillRole(e.agent),
+            e.reader_id ? el("span", { className: "mono", style: "color: var(--text-3); margin-right: 6px; font-size: 11px" }, e.reader_id) : null,
+            el("span", {}, e.label),
+          ));
+        },
+        "agent.done": (e) => {
+          addTrace(el("div", { style: "color: var(--text-3); padding-left: 8px; font-style: italic" },
+            `${e.agent}${e.reader_id ? " " + e.reader_id : ""} done`,
+          ));
+        },
+        "trace.step": (e) => {
+          addTrace(el("div", { style: "color: var(--text-2); padding-left: 8px" },
+            e.agent ? pillRole(e.agent) : null,
+            e.label,
+            e.detail ? el("span", { style: "color: var(--text-3)" }, " — " + e.detail) : null,
+          ));
+        },
+        "source.pinned": (e) => {
+          addTrace(el("div", { className: "card" },
+            pillRole(e.agent),
+            el("span", { style: "font-weight: 500" }, "pinned source: "),
+            el("a", { href: e.url, target: "_blank", rel: "noopener", style: "color: var(--text-2)" }, e.title),
+            el("div", { style: "color: var(--text-3); margin-top: 4px; display: flex; gap: 8px; align-items: center" },
+              el("span", {}, `${e.source_kind} · ${e.bytes}b`),
+              el("span", {}, "·"),
+              blobLink(e.blob_id),
+            ),
+          ));
+        },
+        "snapshot.pinned": (e) => {
+          addTrace(el("div", { className: "card" },
+            pillRole(e.agent),
+            el("span", { style: "font-weight: 500" }, `pinned snapshot ${e.snapshot_kind}`),
+            el("div", { style: "color: var(--text-3); margin-top: 4px; display: flex; gap: 8px; align-items: center" },
+              el("span", {}, `${e.bytes}b`),
+              e.encrypted ? el("span", { style: "color: var(--cite)" }, "🔒 sealed") : null,
+              el("span", {}, "·"),
+              blobLink(e.blob_id),
+            ),
+          ));
+        },
+        "memory.read": (e) => {
+          state.memory[e.namespace] ||= [];
+          state.memory[e.namespace].unshift({ kind: "read", agent: e.agent, query: e.query, count: e.results.length, ts: e.ts });
+          state.memory[e.namespace] = state.memory[e.namespace].slice(0, 20);
+          renderMemory();
+        },
+        "memory.write": (e) => {
+          if (e.status !== "done") return;
+          state.memory[e.namespace] ||= [];
+          state.memory[e.namespace].unshift({ kind: "write", agent: e.agent, text: e.text, blob_id: e.blob_id, ts: e.ts });
+          state.memory[e.namespace] = state.memory[e.namespace].slice(0, 20);
+          renderMemory();
+        },
+        "claim.added": (e) => {
+          state.claims.set(e.claim.id, {
+            text: e.claim.text,
+            blob_ids: e.claim.supporting_blob_ids,
+            confidence: e.claim.confidence,
+            reader: e.claim.reader_role,
+          });
+          renderClaims();
+        },
+        "claim.flagged": (e) => {
+          const c = state.claims.get(e.claim_id);
+          if (!c) return;
+          c.severity = e.severity;
+          c.flag_reason = e.reason;
+          renderClaims();
+        },
+        "run.final": (e) => {
+          state.finalSnapshotBlob = e.final_snapshot_blob_id;
+          renderReport(e.report_markdown);
+          finalMeta.innerHTML = "";
+          finalMeta.append(
+            document.createTextNode("snapshot "),
+            blobLink(e.final_snapshot_blob_id),
+          );
+        },
+        "run.error": (e) => {
+          // Add to trace
+          addTrace(el("div", { className: "card error", style: "color: var(--error)" }, "Error: " + e.message));
+          // Update report pane to show the error clearly
+          reportPane.innerHTML = "";
+          reportPane.append(
+            el("div", { className: "card error", style: "padding: 16px" },
+              el("div", { style: "font-weight: 600; color: var(--error); margin-bottom: 6px" }, "Run failed"),
+              el("div", { style: "color: var(--text); font-size: 13px; line-height: 1.5" }, e.message),
+              el("div", { style: "margin-top: 12px; color: var(--text-3); font-size: 12px" },
+                "Check the trace for per-agent details. Common causes: insufficient SUI/WAL balance on the funding wallet, upload-relay unavailable, or transient API failures.",
+              ),
+            ),
+          );
+          finalMeta.textContent = "Run failed";
+          setRunStatus("error", "run failed");
+          $("#run-btn").disabled = false;
+          state.running = false;
+          // Refresh wallet balances after a Walrus failure — likely useful
+          checkHealth().catch(() => {});
+        },
+        "done": () => {
+          if (state.running) {
+            setRunStatus("ok", "run complete");
+            addTrace(el("div", { style: "color: var(--success); padding-left: 8px" }, "✓ run complete"));
+          }
+          $("#run-btn").disabled = false;
+          state.running = false;
+        },
+      };
+
+      function renderMemory() {
+        memoryPane.innerHTML = "";
+        const orderedNs = ["verified_claims","planner_plan","reader_scratch","critic_notes","synth_outputs"];
+        let any = false;
+        for (const ns of orderedNs) {
+          const items = state.memory[ns] ?? [];
+          if (items.length === 0) continue;
+          any = true;
+          const card = el("div", { className: "card" },
+            el("div", { style: "margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between" },
+              pillNs(ns),
+              el("span", { style: "color: var(--text-3); font-size: 11px" }, `${items.length}`),
+            ),
+          );
+          for (const it of items.slice(0, 4)) {
+            if (it.kind === "read") {
+              card.append(el("div", { style: "color: var(--text-2); margin-top: 4px; line-height: 1.4" },
+                el("span", { style: "color: var(--text-3); margin-right: 4px" }, "read"),
+                pillRole(it.agent),
+                el("span", {}, " " + (it.query.length > 60 ? it.query.slice(0,60)+"…" : it.query) + " "),
+                el("span", { style: "color: var(--text-3)" }, `→ ${it.count}`),
+              ));
+            } else {
+              card.append(el("div", { style: "color: var(--text); margin-top: 4px; line-height: 1.4" },
+                el("span", { style: "color: var(--text-3); margin-right: 4px" }, "write"),
+                pillRole(it.agent),
+                " " + (it.text.length > 90 ? it.text.slice(0,90)+"…" : it.text),
+                it.blob_id ? el("div", { style: "padding-left: 10px; margin-top: 2px" }, "↳ ", blobLink(it.blob_id)) : null,
+              ));
+            }
+          }
+          memoryPane.append(card);
+        }
+        if (!any) {
+          memoryPane.append(el("div", { className: "empty-state" }, "Reads and writes appear here as agents touch memory."));
+        }
+      }
+
+      function renderClaims() {
+        claimsPane.innerHTML = "";
+        if (state.claims.size === 0) {
+          claimsPane.append(el("div", { className: "empty-state" }, "Atomic claims with their supporting blob IDs."));
+          return;
+        }
+        const sorted = Array.from(state.claims.entries()).sort((a,b) => {
+          const na = parseInt(a[0].replace(/\D/g,""),10);
+          const nb = parseInt(b[0].replace(/\D/g,""),10);
+          return na - nb;
+        });
+        for (const [id, c] of sorted) {
+          const sevClass = c.severity === "block" ? "sev-block" : c.severity === "warn" ? "sev-warn" : c.severity === "info" ? "sev-info" : "";
+          const card = el("div", { className: "card" },
+            el("div", { style: "display: flex; align-items: center; justify-content: space-between" },
+              el("code", { className: `mono ${sevClass}`, style: "color: var(--cite); font-weight: 500" }, id),
+              el("span", { style: "color: var(--text-3); font-size: 11px" }, c.reader ? c.reader : ""),
+            ),
+            el("div", { style: "color: var(--text); margin-top: 6px; line-height: 1.45" }, c.text),
+            el("div", { style: "color: var(--text-3); margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 11px" },
+              ...c.blob_ids.map((b) => blobLink(b)),
+              c.confidence != null ? el("span", { style: "margin-left: auto" }, `conf ${c.confidence.toFixed(2)}`) : null,
+            ),
+            c.severity ? el("div", { className: sevClass, style: "margin-top: 6px; font-size: 11px; line-height: 1.4" }, `${c.severity}: ${c.flag_reason ?? ""}`) : null,
+          );
+          claimsPane.append(card);
+        }
+      }
+
+      function renderReport(markdown) {
+        const escaped = markdown
+          .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const html = escaped
+          .replace(/^### (.*)$/gm, "<h3>$1</h3>")
+          .replace(/^## (.*)$/gm, "<h2>$1</h2>")
+          .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+          .replace(/`([^`]+)`/g, "<code>$1</code>")
+          .replace(/\n\n/g, "</p><p>")
+          .replace(/\n/g, "<br>");
+        reportPane.innerHTML = `<div class="report-body"><p>${html}</p></div>`;
+
+        // Wire up [c-id] citations
+        const body = reportPane.querySelector(".report-body");
+        body.innerHTML = body.innerHTML.replace(
+          /\[(c-\d+)\]/g,
+          (_, id) => {
+            const c = state.claims.get(id);
+            if (!c) return `<span class="claim-cite">[${id}]</span>`;
+            const sevClass = c.severity === "block" ? "flagged-block" : c.severity === "warn" ? "flagged-warn" : "";
+            const blobs = (c.blob_ids||[]).map((b) => `${state.aggregator}/v1/blobs/${b}`).join(",");
+            return `<a class="claim-cite ${sevClass}" data-blobs="${blobs}" data-id="${id}" title="${(c.text || "").replace(/"/g,'&quot;')}">[${id}]</a>`;
+          },
+        );
+        for (const a of body.querySelectorAll("a.claim-cite")) {
+          a.addEventListener("click", (e) => {
+            e.preventDefault();
+            const blobs = (a.getAttribute("data-blobs") || "").split(",").filter(Boolean);
+            if (blobs[0]) window.open(blobs[0], "_blank", "noopener");
+          });
+        }
+      }
+
+      // ======== Form ========
+      $("#run-form").addEventListener("submit", async (ev) => {
+        ev.preventDefault();
+        if (state.running) return;
+        const q = $("#question").value.trim();
+        if (!q) return;
+
+        state.running = true;
+        $("#run-btn").disabled = true;
+        setRunStatus("running");
+
+        // Reset transient panes — keep memory state since it's persistent
+        // in MemWal anyway and clearing it would lie.
+        trace.innerHTML = "";
+        claimsPane.innerHTML = "";
+        reportPane.innerHTML = "";
+        reportPane.append(el("div", { className: "empty-state" },
+          el("span", { className: "live-dot" }), "Working on it… agents are spinning up.",
+        ));
+        state.claims = new Map();
+        finalMeta.textContent = "";
+
+        const enabled_sources = Array.from(document.querySelectorAll(".src-cb"))
+          .filter((cb) => cb.checked).map((cb) => cb.value);
+
+        let resp;
+        try {
+          resp = await fetch("/api/run", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question: q, enabled_sources }),
+          });
+        } catch (err) {
+          handlers["run.error"]({ type: "run.error", message: `Network error: ${err.message}`, ts: Date.now() });
+          return;
+        }
+        if (!resp.ok || !resp.body) {
+          handlers["run.error"]({ type: "run.error", message: `HTTP ${resp.status}`, ts: Date.now() });
+          return;
+        }
+
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = "";
+        try {
+          for (;;) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buf += decoder.decode(value, { stream: true });
+            let idx;
+            while ((idx = buf.indexOf("\n\n")) !== -1) {
+              const frame = buf.slice(0, idx);
+              buf = buf.slice(idx + 2);
+              const dataLine = frame.split("\n").find((l) => l.startsWith("data:"));
+              if (!dataLine) continue;
+              try {
+                const evt = JSON.parse(dataLine.slice(5).trim());
+                const fn = handlers[evt.type];
+                if (fn) fn(evt);
+              } catch (err) {
+                console.error("bad event", err, dataLine);
+              }
+            }
+          }
+        } catch (err) {
+          handlers["run.error"]({ type: "run.error", message: `Stream error: ${err.message}`, ts: Date.now() });
+        } finally {
+          // Belt-and-suspenders — if neither done nor error fired, still clean up
+          if (state.running) {
+            $("#run-btn").disabled = false;
+            state.running = false;
+          }
+        }
+      });
+
+      $("#clear-btn").addEventListener("click", () => {
+        trace.innerHTML = "";
+        trace.append(el("div", { className: "empty-state" }, "The agent trace will appear here while a run is in progress."));
+        reportPane.innerHTML = "";
+        reportPane.append(el("div", { className: "empty-state" },
+          "Run a question to see the verifiable report. Every ",
+          el("span", { className: "claim-cite" }, "[c-id]"),
+          " in the report is a clickable link to the Walrus blob that justifies it.",
+        ));
+        claimsPane.innerHTML = "";
+        claimsPane.append(el("div", { className: "empty-state" }, "Atomic claims with their supporting blob IDs."));
+        state.claims = new Map();
+        finalMeta.textContent = "";
+        setRunStatus(null);
+      });
+    </script>
+  </body>
+</html>
