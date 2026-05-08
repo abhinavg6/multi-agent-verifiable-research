@@ -116,8 +116,8 @@ Walrus storage isn't free: it's paid in **WAL** by the *uploading* address. The 
 
 How to fund:
 
-- **Mainnet** — buy SUI on any exchange that supports it; acquire WAL via the [Walrus app](https://stake-wal.wal.app). Export the bech32 private key (`suiprivkey1…`) into `SUI_PRIVATE_KEY`. About 0.5 SUI + 1 WAL covers many runs (gas dominates over storage at this scale).
-- **Testnet** — set `SUI_NETWORK=testnet` and switch the aggregator/upload-relay URLs to their `*-testnet.walrus.space` variants. SUI faucet at <https://faucet.sui.io>; WAL via the staking app or `walrus get-wal`.
+- **Mainnet** — buy WAL on any exchange that supports it, or buy SUI and swap to WAL. Export the bech32 private key (`suiprivkey1…`) into `SUI_PRIVATE_KEY`. About 0.5 SUI + 1 WAL covers many runs (gas dominates over storage at this scale).
+- **Testnet** — set `SUI_NETWORK=testnet` and switch the aggregator/upload-relay URLs to their `*-testnet.walrus.space` variants. SUI faucet at <https://faucet.sui.io>; WAL via `walrus get-wal`.
 
 The MemWal *memory* path is funded separately by the MemWal managed relayer — the keypair only pays for Walrus pins.
 
