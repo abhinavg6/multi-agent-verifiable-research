@@ -107,12 +107,14 @@ export async function runResearchLab(
     const dispatched = readerInputs.length;
     const succeeded = readerResults.filter((r) => r !== null).length;
     const errored = dispatched - succeeded;
-    const empty = succeeded; // succeeded but produced 0 claims (since allClaims is empty)
+    const empty = succeeded;
     throw new Error(
       `All ${dispatched} Reader(s) failed to produce claims (${errored} errored, ${empty} returned no usable source). ` +
-        `Common causes: insufficient SUI/WAL balance on the funding wallet, upload-relay unavailable, ` +
-        `or all source APIs returned no matches for the sub-questions. ` +
-        `Check the trace pane for the specific failure on each Reader.`,
+        `Most likely causes: ` +
+        `(1) Wikipedia source is toggled off — it's the safety-net fallback, leaving it disabled removes the only reader that always has body text; ` +
+        `(2) insufficient SUI/WAL balance on the funding wallet (check the wallet badge in the header); ` +
+        `(3) upload-relay or source APIs unavailable. ` +
+        `Check the trace pane for per-reader detail.`,
     );
   }
 

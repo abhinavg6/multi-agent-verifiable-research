@@ -12,6 +12,7 @@ import { MemWal } from "@mysten-incubation/memwal";
 import type { EventBus } from "./events.ts";
 import type { AgentRole, Namespace } from "./types.ts";
 import { NAMESPACES } from "./types.ts";
+import { retryAbort } from "./retry.ts";
 
 export interface MemoryClientConfig {
   accountId: string;
@@ -49,7 +50,23 @@ export class MemoryClient {
     limit: number,
     bus?: EventBus,
   ): Promise<RecallHit[]> {
-    const result = await this.memwal.recall(query, limit, namespace);
+    // Wrap in retryAbort — MemWal calls go through undici fetch and can
+    // hit transient TCP drops just like the LLM calls do.
+    const result = await retryAbort(
+      () => this.memwal.recall(query, limit, namespace),
+      {
+        onRetry: (attempt, err, backoffMs) => {
+          const detail = err instanceof Error ? err.message : String(err);
+          bus?.emit({
+            type: "trace.step",
+            agent,
+            label: `memwal recall (${namespace}): aborted, retry ${attempt} in ${backoffMs}ms`,
+            detail: detail.slice(0, 140),
+            ts: Date.now(),
+          });
+        },
+      },
+    );
     const results = result.results ?? [];
     bus?.emit({
       type: "memory.read",
@@ -84,7 +101,21 @@ export class MemoryClient {
       ts: Date.now(),
     });
     try {
-      const result = await this.memwal.remember(text, namespace);
+      const result = await retryAbort(
+        () => this.memwal.remember(text, namespace),
+        {
+          onRetry: (attempt, err, backoffMs) => {
+            const detail = err instanceof Error ? err.message : String(err);
+            bus?.emit({
+              type: "trace.step",
+              agent,
+              label: `memwal remember (${namespace}): aborted, retry ${attempt} in ${backoffMs}ms`,
+              detail: detail.slice(0, 140),
+              ts: Date.now(),
+            });
+          },
+        },
+      );
       bus?.emit({
         type: "memory.write",
         namespace,

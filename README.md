@@ -2,7 +2,7 @@
 
 A small, self-contained research workflow that turns a free-text question into a citation-grounded report — built on Anthropic Claude for reasoning, **MemWal** for memory, **Walrus** for verifiable storage, and (optionally) **Seal** for snapshot encryption.
 
-Every fetched source is content-addressed on Walrus, every per-agent state snapshot is pinned before the next agent picks it up, and every claim in the final report is a clickable citation that resolves to the exact bytes on the public-good Walrus aggregator. The trace pane shows the whole orchestration in real time.
+Every fetched source is content-addressed on Walrus, every per-agent state snapshot is pinned before the next agent picks it up, and every claim in the final report is a clickable citation that opens the captured source bytes alongside the Sui transactions that pinned them, anonymously fetchable from the public-good Walrus aggregator. The trace pane shows the whole orchestration in real time.
 
 ## Architecture
 
@@ -93,6 +93,8 @@ Two kinds of bytes get pinned to Walrus:
 2. **Agent snapshots** — planner, every reader, critic, synthesizer. Optionally Seal-encrypted.
 
 Each pin uses `@mysten/walrus`'s `writeBlobFlow` (encode → register → upload → certify). The lab emits a `source.pinned` or `snapshot.pinned` event with the Walrus blob ID, the public aggregator URL, and the on-chain object id + register/certify transaction digests, so the trace pane can deep-link the full audit trail.
+
+Clicking any blob link in the trace pane, any `[c-id]` citation in the final report, or the final-report snapshot link in the header opens a viewer that renders the bytes nicely — source title, captured text, snapshot fields — alongside a provenance card linking the on-chain `register` and `certify` transactions on suiscan.
 
 The aggregator (read path) is anonymous — anyone can fetch any pinned blob from `https://aggregator.walrus-mainnet.walrus.space/v1/blobs/{id}` without a keypair. So the citation-verification side of the demo stays fully public.
 

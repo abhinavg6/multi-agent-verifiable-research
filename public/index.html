@@ -444,6 +444,11 @@
         claims: new Map(),
         memory: { verified_claims: [], planner_plan: [], reader_scratch: [], critic_notes: [], synth_outputs: [] },
         aggregator: null,
+        network: "mainnet",
+        // blobId → { register_digest, certify_digest, object_id } collected
+        // from source.pinned / snapshot.pinned events. Lets blobLink() and
+        // claim citations route to /v/<blobId> with full provenance params.
+        blobMeta: new Map(),
         finalSnapshotBlob: null,
         running: false,
       };
@@ -474,10 +479,25 @@
       }
 
       function shortId(s) { return s ? s.slice(0, 10) + "…" : ""; }
+
+      /**
+       * Build a /v/<blobId> viewer URL. Adds provenance query params from
+       * state.blobMeta when we have them (i.e. for blobs the lab pinned
+       * during this session — source bytes and agent snapshots).
+       */
+      function viewerUrl(blobId) {
+        const meta = state.blobMeta.get(blobId);
+        const qs = new URLSearchParams();
+        if (state.network) qs.set("net", state.network);
+        if (meta?.register_digest) qs.set("reg", meta.register_digest);
+        if (meta?.certify_digest)  qs.set("cer", meta.certify_digest);
+        if (meta?.object_id)       qs.set("obj", meta.object_id);
+        return `/v/${encodeURIComponent(blobId)}${qs.toString() ? "?" + qs.toString() : ""}`;
+      }
       function blobLink(blobId) {
         return el("a", {
           className: "blob-link",
-          href: `${state.aggregator}/v1/blobs/${blobId}`,
+          href: viewerUrl(blobId),
           target: "_blank", rel: "noopener", title: blobId,
         }, shortId(blobId));
       }
@@ -513,6 +533,7 @@
           const r = await fetch("/api/health");
           const h = await r.json();
           state.aggregator = h.walrus.aggregator;
+          state.network = h.walrus.network || "mainnet";
 
           $("#health-anth").innerHTML = `<span class="status-dot ${h.anthropic.hasKey ? 'ok' : 'error'}"></span>anthropic <span style="color: var(--text-3); margin-left: 4px">${h.anthropic.model}</span>`;
           $("#health-mw").innerHTML   = `<span class="status-dot ${h.memwal.ok ? 'ok' : 'error'}"></span>memwal`;
@@ -561,6 +582,13 @@
           ));
         },
         "source.pinned": (e) => {
+          // Cache provenance so subsequent blobLink() calls and citation
+          // clicks for this blob carry the on-chain digests.
+          state.blobMeta.set(e.blob_id, {
+            register_digest: e.register_digest,
+            certify_digest: e.certify_digest,
+            object_id: e.object_id,
+          });
           addTrace(el("div", { className: "card" },
             pillRole(e.agent),
             el("span", { style: "font-weight: 500" }, "pinned source: "),
@@ -573,6 +601,11 @@
           ));
         },
         "snapshot.pinned": (e) => {
+          state.blobMeta.set(e.blob_id, {
+            register_digest: e.register_digest,
+            certify_digest: e.certify_digest,
+            object_id: e.object_id,
+          });
           addTrace(el("div", { className: "card" },
             pillRole(e.agent),
             el("span", { style: "font-weight: 500" }, `pinned snapshot ${e.snapshot_kind}`),
@@ -732,7 +765,9 @@
           .replace(/\n/g, "<br>");
         reportPane.innerHTML = `<div class="report-body"><p>${html}</p></div>`;
 
-        // Wire up [c-id] citations
+        // Wire up [c-id] citations. Each citation links to the /v/<blobId>
+        // viewer for the first supporting blob, with provenance params from
+        // state.blobMeta (register_digest, certify_digest, object_id, network).
         const body = reportPane.querySelector(".report-body");
         body.innerHTML = body.innerHTML.replace(
           /\[(c-\d+)\]/g,
@@ -740,15 +775,15 @@
             const c = state.claims.get(id);
             if (!c) return `<span class="claim-cite">[${id}]</span>`;
             const sevClass = c.severity === "block" ? "flagged-block" : c.severity === "warn" ? "flagged-warn" : "";
-            const blobs = (c.blob_ids||[]).map((b) => `${state.aggregator}/v1/blobs/${b}`).join(",");
-            return `<a class="claim-cite ${sevClass}" data-blobs="${blobs}" data-id="${id}" title="${(c.text || "").replace(/"/g,'&quot;')}">[${id}]</a>`;
+            const urls = (c.blob_ids||[]).map((b) => viewerUrl(b)).join(",");
+            return `<a class="claim-cite ${sevClass}" data-urls="${urls}" data-id="${id}" title="${(c.text || "").replace(/"/g,'&quot;')}">[${id}]</a>`;
           },
         );
         for (const a of body.querySelectorAll("a.claim-cite")) {
           a.addEventListener("click", (e) => {
             e.preventDefault();
-            const blobs = (a.getAttribute("data-blobs") || "").split(",").filter(Boolean);
-            if (blobs[0]) window.open(blobs[0], "_blank", "noopener");
+            const urls = (a.getAttribute("data-urls") || "").split(",").filter(Boolean);
+            if (urls[0]) window.open(urls[0], "_blank", "noopener");
           });
         }
       }

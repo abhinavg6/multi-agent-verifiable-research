@@ -222,6 +222,13 @@ app.get("/", async (c) => {
   const html = await fs.readFile(path.join(PUBLIC_DIR, "index.html"), "utf-8");
   return c.html(html);
 });
+// Per-blob viewer. Path is /v/<blobId>; the blobId is read by the page from
+// window.location.pathname. Optional query params reg, cer, obj, net carry
+// the provenance metadata through. Same static page, regardless of blob.
+app.get("/v/:blobId", async (c) => {
+  const html = await fs.readFile(path.join(PUBLIC_DIR, "viewer.html"), "utf-8");
+  return c.html(html);
+});
 app.use("/static/*", serveStatic({ root: "./public" }));
 
 console.log(`\nverifiable-research-lab`);

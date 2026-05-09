@@ -116,13 +116,26 @@ export async function runCritic(
       reason: f.reason,
       ts: Date.now(),
     });
-    // Persist veto/warn into the shared claim graph.
-    await memory.remember(
-      "critic_notes",
-      "critic",
-      `[${c.id}] ${f.severity.toUpperCase()}: ${f.reason}`,
-      bus,
-    );
+    // Persist veto/warn into the shared claim graph. Best-effort: the
+    // critic_snapshot below is the canonical record, and the Synthesizer
+    // sees critic flags in-process via the claim object's critic_flag
+    // field rather than via MemWal recall.
+    try {
+      await memory.remember(
+        "critic_notes",
+        "critic",
+        `[${c.id}] ${f.severity.toUpperCase()}: ${f.reason}`,
+        bus,
+      );
+    } catch (err) {
+      bus.emit({
+        type: "trace.step",
+        agent: "critic",
+        label: `Critic: memwal write failed for ${c.id} (continuing)`,
+        detail: err instanceof Error ? err.message.slice(0, 140) : String(err).slice(0, 140),
+        ts: Date.now(),
+      });
+    }
   }
 
   const snapshot: CriticSnapshot = {

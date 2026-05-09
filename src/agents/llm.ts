@@ -16,6 +16,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { EventBus } from "../events.ts";
 import type { AgentRole } from "../types.ts";
+import { retryAbort } from "../retry.ts";
 
 export interface LlmCallArgs {
   anthropic: Anthropic;
@@ -48,77 +49,51 @@ async function callRaw(args: LlmCallArgs, mode: "json" | "text"): Promise<string
       ? args.system + "\n\nRespond with a single JSON object. No prose, no markdown fences."
       : args.system;
 
-  let lastErr: unknown;
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    try {
-      const resp = await args.anthropic.messages.create(
-        {
-          model: args.model,
-          max_tokens: args.max_tokens ?? 2048,
-          system,
-          messages: [{ role: "user", content: args.user }],
+  try {
+    return await retryAbort(
+      async () => {
+        const resp = await args.anthropic.messages.create(
+          {
+            model: args.model,
+            max_tokens: args.max_tokens ?? 2048,
+            system,
+            messages: [{ role: "user", content: args.user }],
+          },
+          {
+            // Tight per-attempt timeout. The SDK default is 10 minutes
+            // which is too forgiving — for these short calls, anything
+            // past ~90s is a stalled connection we should retry rather
+            // than wait on.
+            timeout: DEFAULT_TIMEOUT_MS,
+            // SDK handles its own 5xx/429 retries internally.
+            maxRetries: 2,
+          },
+        );
+        return resp.content
+          .filter((b): b is Anthropic.Messages.TextBlock => b.type === "text")
+          .map((b) => b.text)
+          .join("\n");
+      },
+      {
+        maxAttempts: MAX_ATTEMPTS,
+        onRetry: (attempt, err, backoffMs) => {
+          const detail = err instanceof Error ? err.message : String(err);
+          args.bus?.emit({
+            type: "trace.step",
+            agent: args.agent,
+            label: `${args.label ?? "LLM"}: call aborted, retry ${attempt}/${MAX_ATTEMPTS - 1} in ${backoffMs}ms`,
+            detail: detail.slice(0, 140),
+            ts: Date.now(),
+          });
         },
-        {
-          // Tight per-attempt timeout. The SDK default is 10 minutes which
-          // is too forgiving — for these short calls, anything past ~90s
-          // is a stalled connection we should retry rather than wait on.
-          timeout: DEFAULT_TIMEOUT_MS,
-          // The SDK does its own retries on 5xx/429; let it.
-          maxRetries: 2,
-        },
-      );
-      return resp.content
-        .filter((b): b is Anthropic.Messages.TextBlock => b.type === "text")
-        .map((b) => b.text)
-        .join("\n");
-    } catch (err) {
-      lastErr = err;
-      if (attempt >= MAX_ATTEMPTS || !isRetriable(err)) break;
-
-      const backoffMs = 600 * Math.pow(2, attempt - 1); // 600, 1200, 2400…
-      const detail = err instanceof Error ? err.message : String(err);
-      args.bus?.emit({
-        type: "trace.step",
-        agent: args.agent,
-        label: `${args.label ?? "LLM"}: call aborted, retry ${attempt}/${MAX_ATTEMPTS - 1} in ${backoffMs}ms`,
-        detail: detail.slice(0, 140),
-        ts: Date.now(),
-      });
-      await sleep(backoffMs);
-    }
+      },
+    );
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      `LLM call failed${args.label ? ` (${args.label})` : ""} after ${MAX_ATTEMPTS} attempts: ${detail}`,
+    );
   }
-  // Re-throw with friendlier context for the user-facing error pane.
-  const detail = lastErr instanceof Error ? lastErr.message : String(lastErr);
-  throw new Error(
-    `LLM call failed${args.label ? ` (${args.label})` : ""} after ${MAX_ATTEMPTS} attempts: ${detail}`,
-  );
-}
-
-/**
- * AbortError, ECONNRESET, ETIMEDOUT, "aborted" — the failure modes worth
- * retrying. We deliberately don't retry on 4xx (other than 408/409/429,
- * which the SDK already handles): those are usually our fault, not the
- * network's.
- */
-function isRetriable(err: unknown): boolean {
-  if (err == null) return false;
-  const e = err as { name?: string; message?: string; code?: string; cause?: any };
-  const name = e.name ?? "";
-  const msg = e.message ?? "";
-  const code = e.code ?? e.cause?.code ?? "";
-  if (name === "AbortError") return true;
-  if (msg.includes("aborted")) return true;
-  if (msg.includes("This operation was aborted")) return true;
-  if (msg.includes("ECONNRESET")) return true;
-  if (msg.includes("ETIMEDOUT")) return true;
-  if (msg.includes("socket hang up")) return true;
-  if (msg.includes("fetch failed")) return true;
-  if (code === "ECONNRESET" || code === "ETIMEDOUT" || code === "ECONNREFUSED") return true;
-  return false;
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms));
 }
 
 function parseJSONBestEffort<T>(text: string): T {

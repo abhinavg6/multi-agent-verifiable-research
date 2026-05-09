@@ -76,9 +76,21 @@ export async function runReader(
     ts: Date.now(),
   });
 
-  // 1. Pick the first available source kind from the planner's preference.
-  let chosen: { kind: SourceKind; doc: SourceDocument } | null = null;
-  for (const kind of input.sub_question.preferred_sources) {
+  // 1. Pick the first available source kind from the planner's preference,
+  //    then fall back to Wikipedia if nothing else panned out — Wikipedia's
+  //    API consistently returns substantial extracts where arXiv/OpenAlex/
+  //    PubMed can return metadata-only entries that we can't extract claims
+  //    from.
+  //
+  //    Threshold: 30 chars of text is enough to attempt extraction. The
+  //    earlier 80-char floor caused near-empty abstracts to silently fail
+  //    even when the source was technically returning a result.
+  const MIN_USABLE_TEXT_LENGTH = 30;
+  type Picked = { kind: SourceKind; doc: SourceDocument };
+  const triedKinds = new Set<SourceKind>();
+
+  const tryKind = async (kind: SourceKind): Promise<Picked | null> => {
+    triedKinds.add(kind);
     bus.emit({
       type: "trace.step",
       agent: "reader",
@@ -93,11 +105,18 @@ export async function runReader(
         hint: input.hints?.[kind],
         maxResults: 3,
       });
-      const best = docs.find((d) => d.text && d.text.length > 80);
-      if (best) {
-        chosen = { kind, doc: best };
-        break;
-      }
+      const best = docs.find((d) => d.text && d.text.length >= MIN_USABLE_TEXT_LENGTH);
+      if (best) return { kind, doc: best };
+      // Surface why: how many docs came back and what their text lengths were.
+      bus.emit({
+        type: "trace.step",
+        agent: "reader",
+        label: `Reader ${input.reader_id}: ${kind} returned ${docs.length} doc(s), none with ≥${MIN_USABLE_TEXT_LENGTH} chars of text`,
+        detail: docs
+          .map((d) => `"${(d.title ?? "").slice(0, 40)}" (${(d.text ?? "").length}c)`)
+          .join("; ") || "(no results)",
+        ts: Date.now(),
+      });
     } catch (err) {
       bus.emit({
         type: "trace.step",
@@ -107,14 +126,37 @@ export async function runReader(
         ts: Date.now(),
       });
     }
+    return null;
+  };
+
+  let chosen: Picked | null = null;
+
+  // First pass: planner's preferred sources, in order.
+  for (const kind of input.sub_question.preferred_sources) {
+    chosen = await tryKind(kind);
+    if (chosen) break;
+  }
+
+  // Last-resort fallback: Wikipedia. Its REST API almost always returns
+  // a usable extract for general-knowledge sub-questions, so we use it as
+  // the safety net even when the planner didn't pick it.
+  if (!chosen && !triedKinds.has("wikipedia")) {
+    bus.emit({
+      type: "trace.step",
+      agent: "reader",
+      label: `Reader ${input.reader_id}: falling back to wikipedia`,
+      detail: "preferred sources exhausted",
+      ts: Date.now(),
+    });
+    chosen = await tryKind("wikipedia");
   }
 
   if (!chosen) {
     bus.emit({
       type: "trace.step",
       agent: "reader",
-      label: `Reader ${input.reader_id}: no usable source`,
-      detail: input.sub_question.preferred_sources.join(", "),
+      label: `Reader ${input.reader_id}: no usable source after fallback`,
+      detail: `tried: ${Array.from(triedKinds).join(", ")}`,
       ts: Date.now(),
     });
     bus.emit({ type: "agent.done", agent: "reader", reader_id: input.reader_id, ts: Date.now() });
@@ -183,14 +225,28 @@ export async function runReader(
   }));
 
   // 5. Emit per-claim events and write each to verified_claims (shared).
+  //    These MemWal writes are best-effort: the orchestrator already passes
+  //    `claims` in-process to the Critic and Synthesizer, so a transient
+  //    relayer hiccup that drops one of these doesn't break the flow.
+  //    The reader_snapshot pinned to Walrus below is the canonical record.
   for (const claim of claims) {
     bus.emit({ type: "claim.added", agent: "reader", claim, ts: Date.now() });
-    await memory.remember(
-      "verified_claims",
-      "reader",
-      `[${claim.id}] (${input.reader_id}, conf=${claim.confidence.toFixed(2)}) ${claim.text} — sources: ${claim.supporting_blob_ids.join(",")}`,
-      bus,
-    );
+    try {
+      await memory.remember(
+        "verified_claims",
+        "reader",
+        `[${claim.id}] (${input.reader_id}, conf=${claim.confidence.toFixed(2)}) ${claim.text} — sources: ${claim.supporting_blob_ids.join(",")}`,
+        bus,
+      );
+    } catch (err) {
+      bus.emit({
+        type: "trace.step",
+        agent: "reader",
+        label: `Reader ${input.reader_id}: memwal write failed for ${claim.id} (continuing)`,
+        detail: err instanceof Error ? err.message.slice(0, 140) : String(err).slice(0, 140),
+        ts: Date.now(),
+      });
+    }
   }
 
   // 6. Pin the Reader snapshot.

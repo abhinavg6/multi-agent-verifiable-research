@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <title>Walrus blob · Verifiable Research Lab</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      :root {
+        --bg: #0a0a0c;
+        --panel: #131319;
+        --panel-2: #181820;
+        --panel-hover: #1c1c25;
+        --border: #21222a;
+        --border-soft: #1a1b22;
+        --text: #ededee;
+        --text-2: #a1a1aa;
+        --text-3: #6b7280;
+        --accent: #3b82f6;
+        --accent-hover: #60a5fa;
+        --error: #f87171;
+        --error-bg: rgba(248, 113, 113, 0.1);
+        --error-border: rgba(248, 113, 113, 0.3);
+        --success: #34d399;
+        --cite: #fbbf24;
+        --cite-bg: rgba(251, 191, 36, 0.12);
+
+        --role-planner: #a78bfa;
+        --role-reader: #60a5fa;
+        --role-critic: #f87171;
+        --role-synthesizer: #34d399;
+
+        --kind-source: #fbbf24;
+        --kind-source-bg: rgba(251, 191, 36, 0.12);
+        --kind-snap: #a78bfa;
+        --kind-snap-bg: rgba(167, 139, 250, 0.12);
+      }
+      [data-theme="light"] {
+        --bg: #f7f8fa;
+        --panel: #ffffff;
+        --panel-2: #fafafa;
+        --panel-hover: #f0f1f4;
+        --border: #e5e7eb;
+        --border-soft: #f0f1f4;
+        --text: #0f172a;
+        --text-2: #475569;
+        --text-3: #94a3b8;
+        --accent: #2563eb;
+        --accent-hover: #1d4ed8;
+        --error: #dc2626;
+        --error-bg: rgba(220, 38, 38, 0.06);
+        --error-border: rgba(220, 38, 38, 0.25);
+        --success: #059669;
+        --cite: #b45309;
+        --cite-bg: rgba(180, 83, 9, 0.08);
+
+        --role-planner: #7c3aed;
+        --role-reader: #2563eb;
+        --role-critic: #dc2626;
+        --role-synthesizer: #059669;
+
+        --kind-source: #b45309;
+        --kind-source-bg: rgba(180, 83, 9, 0.08);
+        --kind-snap: #7c3aed;
+        --kind-snap-bg: rgba(124, 58, 237, 0.08);
+      }
+      html, body {
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter,
+          "Helvetica Neue", Arial, sans-serif;
+        font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+        -webkit-font-smoothing: antialiased;
+      }
+      .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, "JetBrains Mono", monospace; }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+      }
+      .pill {
+        display: inline-block;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        border: 1px solid;
+        border-radius: 4px;
+        line-height: 1.5;
+      }
+      .pill-source { color: var(--kind-source); background: var(--kind-source-bg); border-color: var(--kind-source); }
+      .pill-snap   { color: var(--kind-snap);   background: var(--kind-snap-bg);   border-color: var(--kind-snap); }
+      .pill-encrypted { color: var(--cite); background: var(--cite-bg); border-color: var(--cite); }
+
+      .role-planner    { color: var(--role-planner); }
+      .role-reader     { color: var(--role-reader); }
+      .role-critic     { color: var(--role-critic); }
+      .role-synthesizer{ color: var(--role-synthesizer); }
+
+      .icon-btn {
+        background: transparent;
+        color: var(--text-2);
+        border: 1px solid var(--border);
+        padding: 6px;
+        border-radius: 6px;
+        line-height: 0;
+      }
+      .icon-btn:hover { background: var(--panel-hover); color: var(--text); }
+
+      a.link { color: var(--accent); text-decoration: none; }
+      a.link:hover { color: var(--accent-hover); text-decoration: underline; }
+      a.link-mono { color: var(--accent); text-decoration: none; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 13px; }
+      a.link-mono:hover { color: var(--accent-hover); text-decoration: underline; }
+
+      .row { display: flex; align-items: center; gap: 8px; }
+      .label { color: var(--text-3); font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; }
+      .kv { display: grid; grid-template-columns: 130px 1fr; gap: 6px 16px; align-items: baseline; }
+      .kv .k { color: var(--text-3); font-size: 12px; }
+      .kv .v { color: var(--text); font-size: 14px; word-break: break-word; }
+
+      .source-text {
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-size: 14px;
+        line-height: 1.65;
+        color: var(--text);
+      }
+      .markdown { font-size: 14px; line-height: 1.65; color: var(--text); }
+      .markdown p { margin-bottom: 14px; }
+      .markdown h2 { font-size: 17px; font-weight: 600; margin: 18px 0 8px; }
+      .markdown h3 { font-size: 15px; font-weight: 600; margin: 14px 0 6px; }
+      .markdown code {
+        background: var(--panel-2); padding: 1px 5px; border-radius: 3px;
+        font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px; color: var(--accent);
+      }
+      .markdown strong { font-weight: 600; }
+
+      .claim-row {
+        padding: 8px 10px;
+        background: var(--panel-2);
+        border: 1px solid var(--border-soft);
+        border-radius: 6px;
+        margin-bottom: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="max-w-3xl mx-auto p-5">
+      <!-- HEADER -->
+      <header class="flex items-center justify-between mb-4">
+        <a href="/" class="link" style="font-size: 13px">← back to the lab</a>
+        <button id="theme-toggle" class="icon-btn" title="Toggle theme">
+          <svg id="theme-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+      </header>
+
+      <div id="title-block" class="mb-4">
+        <div class="row mb-1.5"><span id="kind-pill" class="pill pill-source">loading…</span></div>
+        <h1 id="doc-title" style="font-size: 22px; font-weight: 600; line-height: 1.3; color: var(--text)">Loading blob…</h1>
+        <div id="doc-subtitle" style="color: var(--text-3); font-size: 13px; margin-top: 4px"></div>
+      </div>
+
+      <!-- PROVENANCE -->
+      <section class="panel p-4 mb-4">
+        <div class="label mb-2">Provenance · pinned forever on Walrus</div>
+        <div id="provenance" class="kv"></div>
+      </section>
+
+      <!-- METADATA (source-only) -->
+      <section id="metadata-section" class="panel p-4 mb-4" style="display: none">
+        <div class="label mb-2">Metadata</div>
+        <div id="metadata" class="kv"></div>
+      </section>
+
+      <!-- CONTENT -->
+      <section id="content-section" class="panel p-5">
+        <div class="label mb-3" id="content-label">Content</div>
+        <div id="content"></div>
+      </section>
+
+      <!-- FOOTER -->
+      <footer class="mt-6 text-center" style="color: var(--text-3); font-size: 11px">
+        Verifiable Research Lab · the bytes above were retrieved anonymously from the public-good Walrus aggregator.
+      </footer>
+    </div>
+
+    <script type="module">
+      // ======== Theme (matches main app) ========
+      const root = document.documentElement;
+      const SAVED_THEME_KEY = "vrl-theme";
+      const initial = localStorage.getItem(SAVED_THEME_KEY) || "dark";
+      root.setAttribute("data-theme", initial);
+      updateThemeIcon();
+
+      document.getElementById("theme-toggle").addEventListener("click", () => {
+        const cur = root.getAttribute("data-theme");
+        const next = cur === "dark" ? "light" : "dark";
+        root.setAttribute("data-theme", next);
+        localStorage.setItem(SAVED_THEME_KEY, next);
+        updateThemeIcon();
+      });
+
+      function updateThemeIcon() {
+        const cur = root.getAttribute("data-theme");
+        const icon = document.getElementById("theme-icon");
+        if (cur === "light") {
+          icon.innerHTML = `
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2"></path><path d="M12 20v2"></path>
+            <path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path>
+            <path d="M2 12h2"></path><path d="M20 12h2"></path>
+            <path d="m4.93 19.07 1.41-1.41"></path><path d="m17.66 6.34 1.41-1.41"></path>`;
+        } else {
+          icon.innerHTML = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>`;
+        }
+      }
+
+      // ======== Helpers ========
+      const $ = (s) => document.querySelector(s);
+
+      function el(tag, props = {}, ...kids) {
+        const e = document.createElement(tag);
+        for (const [k, v] of Object.entries(props)) {
+          if (k === "className") e.className = v;
+          else if (k === "style") e.style.cssText = v;
+          else if (k.startsWith("data-") || ["title","href","target","rel"].includes(k)) e.setAttribute(k, v);
+          else e[k] = v;
+        }
+        for (const k of kids.flat()) {
+          if (k == null) continue;
+          e.append(k.nodeType ? k : document.createTextNode(k));
+        }
+        return e;
+      }
+
+      function shortId(s, n = 14) { return s ? (s.length > n ? s.slice(0, n) + "…" : s) : ""; }
+
+      function formatBytes(n) {
+        if (n == null) return "?";
+        if (n < 1024) return `${n} B`;
+        if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+        return `${(n / (1024 * 1024)).toFixed(2)} MB`;
+      }
+
+      function formatTs(s) {
+        if (!s) return "";
+        try {
+          const d = new Date(s);
+          return d.toLocaleString();
+        } catch { return s; }
+      }
+
+      // ======== Inputs ========
+      const blobId = decodeURIComponent(location.pathname.replace(/^\/v\//, ""));
+      const params = new URLSearchParams(location.search);
+      const registerDigest = params.get("reg") || null;
+      const certifyDigest = params.get("cer") || null;
+      const objectId = params.get("obj") || null;
+      let network = (params.get("net") || "").toLowerCase();
+      let aggregatorUrl = null;
+
+      // ======== Resolve aggregator + network from /api/health if missing ========
+      try {
+        const r = await fetch("/api/health");
+        if (r.ok) {
+          const h = await r.json();
+          aggregatorUrl = h.walrus?.aggregator || aggregatorUrl;
+          if (!network) network = h.walrus?.network || "mainnet";
+        }
+      } catch { /* offline / external — keep going */ }
+      if (!aggregatorUrl) {
+        aggregatorUrl =
+          network === "testnet"
+            ? "https://aggregator.walrus-testnet.walrus.space"
+            : "https://aggregator.walrus-mainnet.walrus.space";
+      }
+      if (!network) network = "mainnet";
+
+      // ======== Provenance card ========
+      function suiscanTx(d) { return `https://suiscan.xyz/${network}/tx/${d}`; }
+      function suiscanObj(o) { return `https://suiscan.xyz/${network}/object/${o}`; }
+      function aggregatorBlobUrl(b) { return `${aggregatorUrl.replace(/\/$/, "")}/v1/blobs/${b}`; }
+
+      function renderProvenance() {
+        const root = $("#provenance");
+        root.innerHTML = "";
+        const rows = [
+          ["Walrus blob", el("a", { className: "link-mono", href: aggregatorBlobUrl(blobId), target: "_blank", rel: "noopener" }, blobId)],
+        ];
+        if (objectId) {
+          rows.push([
+            "On-chain Blob object",
+            el("a", { className: "link-mono", href: suiscanObj(objectId), target: "_blank", rel: "noopener" }, shortId(objectId, 22)),
+          ]);
+        }
+        if (registerDigest) {
+          rows.push([
+            "Register tx",
+            el("a", { className: "link-mono", href: suiscanTx(registerDigest), target: "_blank", rel: "noopener" }, shortId(registerDigest, 22)),
+          ]);
+        }
+        if (certifyDigest) {
+          rows.push([
+            "Certify tx",
+            el("a", { className: "link-mono", href: suiscanTx(certifyDigest), target: "_blank", rel: "noopener" }, shortId(certifyDigest, 22)),
+          ]);
+        }
+        rows.push([
+          "Network",
+          el("span", { style: "color: var(--text-2); font-size: 13px" }, network),
+        ]);
+        for (const [k, v] of rows) {
+          root.append(el("div", { className: "k" }, k));
+          root.append(el("div", { className: "v" }, v));
+        }
+      }
+
+      // ======== Fetch + parse blob ========
+      async function loadBlob() {
+        let bytes;
+        try {
+          const resp = await fetch(aggregatorBlobUrl(blobId));
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+          bytes = new Uint8Array(await resp.arrayBuffer());
+        } catch (err) {
+          renderError("Couldn't fetch blob from Walrus aggregator", String(err?.message || err));
+          return;
+        }
+        const byteLength = bytes.byteLength;
+
+        // Try JSON parse. Sealed blobs will fail; that's fine — render raw.
+        let text = "";
+        try { text = new TextDecoder("utf-8", { fatal: true }).decode(bytes); }
+        catch { renderEncrypted(byteLength); return; }
+
+        let parsed = null;
+        try { parsed = JSON.parse(text); } catch {
+          renderRaw(text, byteLength);
+          return;
+        }
+
+        // Dispatch on shape
+        if (parsed?.kind && ["arxiv","wikipedia","openalex","pubmed","github","rss"].includes(parsed.kind)) {
+          renderSourceDocument(parsed, byteLength);
+        } else if (parsed?.kind === "planner_snapshot") {
+          renderPlannerSnapshot(parsed, byteLength);
+        } else if (parsed?.kind === "reader_snapshot") {
+          renderReaderSnapshot(parsed, byteLength);
+        } else if (parsed?.kind === "critic_snapshot") {
+          renderCriticSnapshot(parsed, byteLength);
+        } else if (parsed?.kind === "synth_snapshot") {
+          renderSynthSnapshot(parsed, byteLength);
+        } else {
+          renderJSON(parsed, byteLength);
+        }
+      }
+
+      // ======== Renderers ========
+      function setHeader({ pillClass, pillText, title, subtitle }) {
+        const pill = $("#kind-pill");
+        pill.className = `pill ${pillClass}`;
+        pill.textContent = pillText;
+        $("#doc-title").textContent = title;
+        $("#doc-subtitle").textContent = subtitle || "";
+      }
+
+      function renderSourceDocument(d, byteLength) {
+        document.title = `${d.title} · Walrus blob`;
+        setHeader({
+          pillClass: "pill-source",
+          pillText: `source · ${d.kind}`,
+          title: d.title || "(untitled)",
+          subtitle: d.url ? null : "captured source",
+        });
+
+        // Metadata card
+        $("#metadata-section").style.display = "block";
+        const meta = $("#metadata");
+        const rows = [];
+        if (d.url) {
+          rows.push(["Original URL", el("a", { className: "link", href: d.url, target: "_blank", rel: "noopener" }, d.url)]);
+        }
+        if (d.authors?.length) {
+          rows.push(["Authors", el("span", { style: "color: var(--text)" }, d.authors.slice(0, 8).join(", ") + (d.authors.length > 8 ? ` (+${d.authors.length - 8} more)` : ""))]);
+        }
+        if (d.published_at) rows.push(["Published", formatTs(d.published_at)]);
+        if (d.fetched_at)   rows.push(["Captured at", formatTs(d.fetched_at)]);
+        rows.push(["Blob size", formatBytes(byteLength)]);
+        for (const [k, v] of rows) {
+          meta.append(el("div", { className: "k" }, k));
+          meta.append(el("div", { className: "v" }, typeof v === "string" ? v : v));
+        }
+
+        // Content
+        $("#content-label").textContent = "Captured source text";
+        $("#content").append(el("div", { className: "source-text" }, d.text || "(empty)"));
+        renderProvenance();
+      }
+
+      function renderPlannerSnapshot(s, byteLength) {
+        document.title = `Planner plan · Walrus blob`;
+        setHeader({
+          pillClass: "pill-snap",
+          pillText: "snapshot · planner",
+          title: "Plan",
+          subtitle: s.question ? `for: ${s.question}` : "",
+        });
+        $("#content-label").textContent = "Decomposition";
+        const c = $("#content");
+        if (s.rationale) {
+          c.append(el("div", { className: "source-text", style: "margin-bottom: 14px; color: var(--text-2)" }, s.rationale));
+        }
+        for (const sq of (s.sub_questions || [])) {
+          c.append(el("div", { className: "claim-row" },
+            el("div", { className: "mono", style: "color: var(--role-planner); font-size: 12px; margin-bottom: 4px" }, sq.id),
+            el("div", { style: "color: var(--text); font-size: 14px; line-height: 1.5; margin-bottom: 4px" }, sq.text),
+            el("div", { style: "color: var(--text-3); font-size: 11px" }, "preferred sources: " + (sq.preferred_sources || []).join(", ")),
+          ));
+        }
+        renderProvenance();
+      }
+
+      function renderReaderSnapshot(s, byteLength) {
+        document.title = `Reader ${s.reader_id || ""} · Walrus blob`;
+        setHeader({
+          pillClass: "pill-snap",
+          pillText: `snapshot · reader`,
+          title: `Reader ${s.reader_id || ""}`,
+          subtitle: s.sub_question_id ? `sub-question: ${s.sub_question_id}` : "",
+        });
+        $("#content-label").textContent = "Source + extracted claims";
+        const c = $("#content");
+        if (s.source) {
+          const src = s.source.doc || s.source;
+          c.append(el("div", { className: "claim-row" },
+            el("div", { style: "color: var(--text-3); font-size: 11px; margin-bottom: 2px" }, `source · ${src.kind}`),
+            el("div", { style: "color: var(--text); font-size: 14px; font-weight: 500; margin-bottom: 4px" }, src.title || ""),
+            src.url ? el("a", { className: "link", href: src.url, target: "_blank", rel: "noopener" }, src.url) : null,
+            s.source.blob_id ? el("div", { style: "margin-top: 6px" },
+              el("a", { className: "link-mono", href: `/v/${s.source.blob_id}?net=${network}`, style: "font-size: 11px" }, "↳ open source blob"),
+            ) : null,
+          ));
+        }
+        for (const claim of (s.claims || [])) {
+          c.append(el("div", { className: "claim-row" },
+            el("div", { className: "mono", style: "color: var(--cite); font-size: 12px; margin-bottom: 4px" }, claim.id, " ",
+              el("span", { style: "color: var(--text-3); margin-left: 6px" }, `conf ${(claim.confidence ?? 0).toFixed(2)}`),
+            ),
+            el("div", { style: "color: var(--text); font-size: 14px; line-height: 1.5" }, claim.text),
+          ));
+        }
+        renderProvenance();
+      }
+
+      function renderCriticSnapshot(s, byteLength) {
+        document.title = `Critic notes · Walrus blob`;
+        setHeader({
+          pillClass: "pill-snap",
+          pillText: "snapshot · critic",
+          title: "Critic notes",
+          subtitle: `${(s.flagged_claim_ids || []).length} claim(s) flagged`,
+        });
+        $("#content-label").textContent = "Notes + flags";
+        const c = $("#content");
+        if (s.notes) {
+          c.append(el("div", { className: "source-text", style: "margin-bottom: 14px" }, s.notes));
+        }
+        for (const id of (s.flagged_claim_ids || [])) {
+          c.append(el("div", { className: "claim-row mono", style: "color: var(--role-critic); font-size: 13px" }, id));
+        }
+        renderProvenance();
+      }
+
+      function renderSynthSnapshot(s, byteLength) {
+        document.title = `Final report · Walrus blob`;
+        setHeader({
+          pillClass: "pill-snap",
+          pillText: "snapshot · synthesizer",
+          title: "Final report",
+          subtitle: s.question ? `for: ${s.question}` : "",
+        });
+        $("#content-label").textContent = "Report (markdown)";
+        const c = $("#content");
+        const md = (s.report_markdown || "").toString();
+        const escaped = md.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const html = escaped
+          .replace(/^### (.*)$/gm, "<h3>$1</h3>")
+          .replace(/^## (.*)$/gm, "<h2>$1</h2>")
+          .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+          .replace(/`([^`]+)`/g, "<code>$1</code>")
+          .replace(/\n\n/g, "</p><p>")
+          .replace(/\n/g, "<br>");
+        const reportDiv = el("div", { className: "markdown" });
+        reportDiv.innerHTML = `<p>${html}</p>`;
+        c.append(reportDiv);
+        if ((s.claim_index || []).length) {
+          c.append(el("div", { className: "label", style: "margin-top: 18px" }, "Claim index"));
+          for (const ci of s.claim_index) {
+            c.append(el("div", { className: "claim-row" },
+              el("span", { className: "mono", style: "color: var(--cite); font-size: 12px; margin-right: 8px" }, ci.claim_id),
+              ...(ci.blob_ids || []).map((b) =>
+                el("a", { className: "link-mono", href: `/v/${b}?net=${network}`, style: "font-size: 11px; margin-right: 6px" }, shortId(b, 12)),
+              ),
+            ));
+          }
+        }
+        renderProvenance();
+      }
+
+      function renderJSON(parsed, byteLength) {
+        document.title = `JSON blob · Walrus`;
+        setHeader({
+          pillClass: "pill-snap",
+          pillText: "json blob",
+          title: "Structured data",
+          subtitle: `${formatBytes(byteLength)}`,
+        });
+        $("#content-label").textContent = "JSON";
+        $("#content").append(el("pre", { className: "mono", style: "white-space: pre-wrap; word-break: break-word; color: var(--text-2); font-size: 12.5px" }, JSON.stringify(parsed, null, 2)));
+        renderProvenance();
+      }
+
+      function renderRaw(text, byteLength) {
+        document.title = `Raw blob · Walrus`;
+        setHeader({
+          pillClass: "pill-snap",
+          pillText: "raw text blob",
+          title: "Raw text",
+          subtitle: formatBytes(byteLength),
+        });
+        $("#content-label").textContent = "Bytes (utf-8)";
+        $("#content").append(el("pre", { className: "mono", style: "white-space: pre-wrap; word-break: break-word; color: var(--text-2); font-size: 12.5px" }, text));
+        renderProvenance();
+      }
+
+      function renderEncrypted(byteLength) {
+        document.title = `Sealed blob · Walrus`;
+        setHeader({
+          pillClass: "pill-encrypted",
+          pillText: "sealed blob",
+          title: "Encrypted snapshot",
+          subtitle: `${formatBytes(byteLength)} · requires Seal session key to decrypt`,
+        });
+        $("#content-label").textContent = "Plaintext not available";
+        $("#content").append(el("div", { style: "color: var(--text-2); font-size: 13px; line-height: 1.6" },
+          "This blob is Seal-encrypted. The bytes are pinned and verifiable, but reading the plaintext requires the delegate key authorized for this snapshot's policy id (",
+          el("code", { className: "mono", style: "background: var(--panel-2); padding: 1px 5px; border-radius: 3px; font-size: 12px" }, "namespace | agent | snapshot_kind"),
+          ").",
+        ));
+        renderProvenance();
+      }
+
+      function renderError(headline, detail) {
+        setHeader({
+          pillClass: "pill-encrypted",
+          pillText: "error",
+          title: headline,
+          subtitle: "",
+        });
+        $("#content-label").textContent = "Detail";
+        $("#content").append(el("div", { style: "color: var(--error); font-size: 13px; line-height: 1.5" }, detail));
+        renderProvenance();
+      }
+
+      if (!blobId || blobId === "") {
+        renderError("No blob id in URL", "Expected /v/<blobId>");
+      } else {
+        loadBlob();
+      }
+    </script>
+  </body>
+</html>
